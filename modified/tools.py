@@ -6,6 +6,7 @@ from collections import namedtuple
 import os, sys, glob, yaml, datetime, argparse
 import csv
 import tensorflow as tf
+import pandas as pd
 
 Graph = namedtuple('Graph', ['X', 'Ri', 'Ro', 'y'])
 
@@ -49,35 +50,10 @@ def load_graph_(filename):
     Ro = np.zeros((n_nodes, n_edges), np.float32)
     Ri[Ri_rows, Ri_cols] = 1
     Ro[Ro_rows, Ro_cols] = 1
-    #Need to change type for later use.
-    y,Ri,Ro=y.astype(np.int32),Ri.astype(np.int32),Ro.astype(np.int32)
-    # Get the number of nodes and edges
-    NV, NE = n_nodes, n_edges
-    # Initialize the coloring vector
-    coloring = np.zeros(NV, dtype=int)
-    # Create a dictionary to store the neighbors of each node
-    neighbors = {i: [] for i in range(NV)}
-    for k in range(NE):
-        if k>0 and k%2000==0: 
-            print(k,'-th iteration..')
-        if y[k] == 1:
-            for j in range(NV):
-                if Ro[j, k] == 1:
-                    for i in range(NV):
-                        if Ri[i, k] == 1 and i != j:
-                            neighbors[j].append(i)
-    # Greedy coloring
-    for node in range(NV):
-        used_colors = set(coloring[n] for n in neighbors[node])
-        # Find the smallest unused color
-        color = 0
-        while color in used_colors:
-            color += 1
-        coloring[node] = color
-    coloring = np.reshape(coloring,(-1,1))
-    # Concatenate the two arrays horizontally (along columns)
-    X = np.concatenate((X, coloring), axis=1)
-    return Graph(X, Ri, Ro, y)
+    #Load colored X
+    graph_dir = filename[:-3]+"csv"
+    Xcol=pd.read_csv(graph_dir)
+    return Graph(Xcol, Ri, Ro, y)
 def parse_args():
     # generic parser, nothing fancy here
     parser = argparse.ArgumentParser(description='Load config file!')
